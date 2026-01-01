@@ -1,0 +1,76 @@
+# TODO：　Actions権限付与してもらえたら有効化できるかも
+name: Sync main to upstream
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create PR to upstream if not exists
+        uses: actions/github-script@v6
+        with:
+          # TODO:upstreamのPR作成用トークンを設定する
+          github-token: ${{ secrets.UPSTREAM_PR_TOKEN }}
+          script: |
+            const owner = "moooda-dev";
+            const repo = "zenn-contents";
+            const base = "main";
+            const head = "en-tomoda:main";
+
+            // 既存PRチェック
+            const { data: pulls } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: "open",
+              base,
+              head,
+            });
+
+            if (pulls.length > 0) {
+              console.log("PR already exists. Skip.");
+              return;
+            }
+
+            // 日付（JST）
+            const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+            const date = now.toISOString().slice(0, 10);
+
+            // 差分取得
+            const { data: compare } = await github.rest.repos.compareCommits({
+              owner,
+              repo,
+              base,
+              head,
+            });
+
+            // articles 配下のみ
+            const articleFiles = compare.files
+              .filter(file => file.filename.startsWith("articles/"))
+              .map(file => file.filename);
+
+            const articleList = articleFiles.length
+              ? articleFiles.map(f => `- ${f}`).join("\n")
+              : "- （記事の変更なし）";
+
+            // PR作成
+            await github.rest.pulls.create({
+              owner,
+              repo,
+              base,
+              head,
+              title: `chore: sync articles (${date})`,
+              body: `origin(en-tomoda)/main にマージされた内容を upstream に同期します。
+
+              ## 📝 記事一覧
+              ${articleList}
+
+              （自動生成PR）
+              `,
+              });
+
+              console.log("PR created to upstream.");
