@@ -2,7 +2,7 @@
 title: "Rustにおける「所有権」を フロントエンドエンジニアが本気で理解する"
 emoji: "🐥"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: ["Rust", "JavaScript", "所有権"]
+topics: ["rust", "javascript", "ownership"]
 published: false
 ---
 
